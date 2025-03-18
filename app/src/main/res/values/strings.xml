@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">DicodingEvent</string>
+    <string name="title_home">Home</string>
+    <string name="title_finished">Finished</string>
+    <string name="title_upcoming">Upcoming</string>
+    <string name="title_favorite">Favorite</string>
+    <string name="title_setting">Setting</string>
+    <string name="upcoming">Upcoming</string>
+    <string name="finished">Finished Events</string>
+    <string name="from">from</string>
+    <string name="searchbar_hint">Cari Event</string>
+
+    <string name="event_name">Nama Acara</string>
+    <string name="event_owner_name">Penyelenggara Acara</string>
+    <string name="event_summary">Ringkasan</string>
+    <string name="event_description">Deskripsi</string>
+    <string name="quota">Kuota</string>
+    <string name="remaining_quota">Sisa Kuota:</string>
+    <string name="begin_time">Waktu Acara</string>
+    <string name="title_time">Waktu Acara :</string>
+    <string name="searchbar_description">cari</string>
+    <string name="value">Value</string>
+    <string name="category">kategori</string>
+    <string name="register">Daftar</string>
+    <string name="location">Lokasi</string>
+    <string name="link_button">Daftar</string>
+
+    <string name="empty_message">No events found</string>
+    <string name="back_button">back\n</string>
+    <string name="title_activity_splash_screen">SplashScreenActivity</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+
+</resources>
