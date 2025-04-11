@@ -5,36 +5,25 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import com.dicoding.dicodingevent.R
 import android.view.View
-import android.widget.ImageView
-//import android.widget.ImageView
 
-
-//import android.widget.ImageView
-//import android.widget.TextView
 import android.widget.Toast
-//import androidx.activity.enableEdgeToEdge
-//import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
-
-//import androidx.core.view.ViewCompat
-//import androidx.core.view.WindowInsetsCompat
-//import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import com.bumptech.glide.Glide
-import com.dicoding.dicodingevent.data.response.Event
+import com.dicoding.dicodingevent.R
+
+
 import com.dicoding.dicodingevent.databinding.ActivityDetailBinding
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-//import retrofit2.Call
-//import retrofit2.Callback
-//import retrofit2.Response/
+import com.dicoding.dicodingevent.entity.FavoriteDatabase
+import com.dicoding.dicodingevent.entity.FavoriteEvent
+
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.math.abs
 
 class DetailActivity : AppCompatActivity() {
 
@@ -46,153 +35,128 @@ class DetailActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDetailBinding.inflate(layoutInflater)
-        val view = binding.root
-        setContentView(view)
+        setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
-
 
         val eventId = intent.getStringExtra(EXTRA_EVENT_ID) ?: ""
 
-        viewModel = ViewModelProvider(this)[DetailViewModel::class.java]
+        val database = FavoriteDatabase.getInstance(this)
+        val favoriteEventDao = database.favoriteEventDao()
 
-        // supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        val factory = DetailViewModelFactory(favoriteEventDao)
+
+
+
+        viewModel = ViewModelProvider(this, factory)[DetailViewModel::class.java]
+
         supportActionBar?.setDisplayShowHomeEnabled(false)
         supportActionBar?.setHomeAsUpIndicator(null)
 
-        val backButton: ImageView = findViewById(R.id.btnBack)
-        backButton.setOnClickListener{
+        binding.btnBack.setOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
-
 
         binding.toolbar.setNavigationOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
 
-        setupFavoriteButton()
-        setEventData()
+    setupFabAnimation()
+    setupFavoriteButton()
+    setEventData()
 
-        viewModel.getDetailEvents(eventId)
-    }
+    viewModel.getDetailEvents(eventId)
+}
 
     override fun onSupportNavigateUp(): Boolean {
         onBackPressedDispatcher.onBackPressed()
         return true
     }
 
-    private fun setupFavoriteButton(){
-        val fabFavorite: FloatingActionButton = binding.fabFavorite
+    private fun setupFabAnimation() {
+        val fabOffset = binding.toolbar.height.toFloat() + binding.fabFavorite.height / 2
 
-//        val eventData = intent.getStringExtra(EXTRA_EVENT_ID)
-//        isFavorite = eventData != null
-
-        isFavorite = false
-        updateFavoriteButton(fabFavorite)
-
-
-        fabFavorite.setOnClickListener {
-            isFavorite = !isFavorite
-            updateFavoriteButton(fabFavorite)
+        binding.appBarLayout.addOnOffsetChangedListener { _ , verticalOffset ->
+            val isCollapsed = abs(verticalOffset) >= binding.appBarLayout.totalScrollRange
+            binding.fabFavorite.animate().translationY(if (isCollapsed) -fabOffset else 0f)
+                .setDuration(200).start()
         }
     }
 
-    private fun updateFavoriteButton(fabFavorite: FloatingActionButton){
-        if(isFavorite) {
-            fabFavorite.setImageResource(R.drawable.ic_favorite)
-//            fabFavorite.backgroundTintList =
-//                ContextCompat.getColorStateList(this, R.color.muted_blue_violet)
+    private fun setupFavoriteButton() {
+        binding.fabFavorite.setOnClickListener{
+            viewModel.detailEvent.value?.let { event ->
+                val favoriteEvent = FavoriteEvent (
+                    id = event.id.toLong(),
+                    name = event.name,
+                    mediaCover = event.mediaCover
+                )
+                viewModel.toggleFavorite(favoriteEvent)
+                updateFavoriteButton()
 
-        } else {
-            fabFavorite.setImageResource(R.drawable.ic_favorite_border)
-//            fabFavorite.backgroundTintList =
-//                ContextCompat.getColorStateList(this, R.color.muted_blue_violet)
 
+            }
         }
     }
 
-    private fun setInitialEventData(event: Event) {
-        with(binding) {
-            tvTitle.text = event.name
-            tvEventDescription.text = HtmlCompat.fromHtml(event.description, HtmlCompat.FROM_HTML_MODE_LEGACY) ?: "Deskripsi tidak tersedia"
-
-            Glide.with(this@DetailActivity)
-                .load(event.imageLogo)
-                //.placeholder(R.drawable.placeholder_image) // Placeholder saat gambar loading
-                //.error(R.drawable.error_image) // Jika gambar gagal dimuat
-                .into(ivMediaCover)
-        }
+    private fun updateFavoriteButton() {
+        binding.fabFavorite.setImageResource(
+            if (isFavorite) R.drawable.ic_favorite else R.drawable.ic_favorite_border
+        )
     }
-
-
 
     private fun setEventData() {
         viewModel.detailEvent.observe(this) { event ->
-
             val totalQuota = event.quota - event.registrants
             with(binding) {
                 tvOwnerName.text = event.ownerName
                 tvEventDescription.text =
-                    HtmlCompat.fromHtml(event.description, HtmlCompat.FROM_HTML_MODE_LEGACY)
+                    HtmlCompat.fromHtml(event.description , HtmlCompat.FROM_HTML_MODE_LEGACY)
+                        .toString()
                 tvTitle.text = event.name
                 tvQuota.text = totalQuota.toString()
-                tvBeginTime.text = dateFormat(event.beginTime, event.endTime)
-                Glide.with(this@DetailActivity)
-                    .load(event.mediaCover)
-                    .into(binding.ivMediaCover)
+                tvBeginTime.text = dateFormat(event.beginTime , event.endTime)
+
+                Glide.with(this@DetailActivity).load(event.mediaCover).into(ivMediaCover)
 
                 btnRegister.setOnClickListener {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(event.link))
+                    val intent = Intent(Intent.ACTION_VIEW , Uri.parse(event.link))
                     startActivity(intent)
                 }
 
                 collapsingToolbar.title = event.name
-                setInitialEventData(event)
-
             }
         }
 
-        viewModel.isLoading.observe(this) {
-            showLoading(it)
-        }
-
+        viewModel.isLoading.observe(this) { showLoading(it) }
         viewModel.errorMessage.observe(this) { errorMessage ->
-            Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
+            Toast.makeText(this , errorMessage , Toast.LENGTH_SHORT).show()
         }
-
     }
 
     private fun showLoading(isLoading: Boolean) {
         binding.progressBarDetail.visibility = if (isLoading) View.VISIBLE else View.GONE
     }
 
-    private fun dateFormat(beginTime: String, endTime: String): String {
-        val input = SimpleDateFormat("yyyy-mm-dd HH:mm:ss", Locale.US)
-        val output = SimpleDateFormat("dd mm yyyy, HH:mm", Locale.US)
-        try {
+    private fun dateFormat(beginTime: String , endTime: String): String {
+        val input = SimpleDateFormat("yyyy-MM-dd HH:mm:ss" , Locale.US)
+        val output = SimpleDateFormat("dd MM yyyy, HH:mm" , Locale.US)
+        return try {
             val beginDate = input.parse(beginTime)
             val endDate = input.parse(endTime)
-            return "${beginDate?.let { output.format(it) }} - ${endDate?.let {
-                output.format(
-                    it
-                )
-            }}"
+            "${beginDate?.let { output.format(it) }} - ${endDate?.let { output.format(it) }}"
         } catch (e: ParseException) {
             e.printStackTrace()
-            return "$beginTime - $endTime"
+            "$beginTime - $endTime"
         }
     }
 
     companion object {
         const val EXTRA_EVENT_ID = "extra_event_id"
 
-        fun start(context: Context, eventId: String) {
-            val intent = Intent(context, DetailActivity::class.java)
-            intent.putExtra(EXTRA_EVENT_ID, eventId)
+        fun start(context: Context , eventId: String) {
+            val intent = Intent(context , DetailActivity::class.java)
+            intent.putExtra(EXTRA_EVENT_ID , eventId)
             context.startActivity(intent)
         }
     }
-
-
-
-
 }
