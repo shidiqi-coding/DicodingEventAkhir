@@ -65,6 +65,11 @@ class DetailActivity : AppCompatActivity() {
     setEventData()
 
     viewModel.getDetailEvents(eventId)
+
+        viewModel.isFavorite.observe(this) { favorite ->
+            isFavorite = favorite
+            updateFavoriteButton(isFavorite)
+        }
 }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -86,19 +91,19 @@ class DetailActivity : AppCompatActivity() {
         binding.fabFavorite.setOnClickListener{
             viewModel.detailEvent.value?.let { event ->
                 val favoriteEvent = FavoriteEvent (
-                    id = event.id.toLong(),
+                    id = event.id.toLong().toString() ,
                     name = event.name,
                     mediaCover = event.mediaCover
                 )
                 viewModel.toggleFavorite(favoriteEvent)
-                updateFavoriteButton()
+                updateFavoriteButton(isFavorite)
 
 
             }
         }
     }
 
-    private fun updateFavoriteButton() {
+    private fun updateFavoriteButton(isFavorite: Boolean) {
         binding.fabFavorite.setImageResource(
             if (isFavorite) R.drawable.ic_favorite else R.drawable.ic_favorite_border
         )
