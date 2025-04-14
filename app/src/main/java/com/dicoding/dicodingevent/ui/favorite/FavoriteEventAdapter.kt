@@ -74,4 +74,3 @@ class FavoriteEventAdapter(private val onItemClicked : (String) -> Unit ) :
 
 
 
-// }
