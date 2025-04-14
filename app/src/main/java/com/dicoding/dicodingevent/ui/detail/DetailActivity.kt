@@ -156,7 +156,7 @@ class DetailActivity : AppCompatActivity() {
     }
 
     companion object {
-        const val EXTRA_EVENT_ID = "extra_event_id"
+        const val EXTRA_EVENT_ID = "event_id"
 
         fun start(context: Context , eventId: String) {
             val intent = Intent(context , DetailActivity::class.java)
