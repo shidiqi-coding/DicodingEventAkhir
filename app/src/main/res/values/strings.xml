@@ -31,4 +31,11 @@
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
 
+    <string name="dark_mode">Dark Mode</string>
+    <string name="appearance">Appearance</string>
+    <string name="appearance_subtitle">Choose your light or dark system theme preference</string>
+    <string name="daily_remainder">Daily Remainder</string>
+    <string name="enable_notification">Enable notification</string>
+    <string name="daily_reminder">Daily Reminder</string>
+
 </resources>
