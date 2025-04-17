@@ -1,26 +1,20 @@
 package com.dicoding.dicodingevent.ui.detail
 
-//import android.R.id
-//import android.util.Log
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-//import androidx.lifecycle.viewModelScope
-
 import com.dicoding.dicodingevent.data.response.Event
 import com.dicoding.dicodingevent.data.response.DetailEventResponse
 import com.dicoding.dicodingevent.data.retrofit.ApiConfig
 import com.dicoding.dicodingevent.entity.FavoriteEvent
 import com.dicoding.dicodingevent.entity.FavoriteEventDao
 import kotlinx.coroutines.launch
-
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-@Suppress("SENSELESS_COMPARISON")
 class DetailViewModel(private val favoriteEventDao: FavoriteEventDao) : ViewModel() {
     private val _detailEvent = MutableLiveData<Event>()
     val detailEvent: LiveData<Event> = _detailEvent
@@ -34,19 +28,16 @@ class DetailViewModel(private val favoriteEventDao: FavoriteEventDao) : ViewMode
     private val _isFavorite = MutableLiveData<Boolean>()
     val isFavorite: LiveData<Boolean> = _isFavorite
 
-
     companion object {
         private const val TAG = "DetailViewModel"
     }
 
-
-    //@SuppressLint("SuspiciousIndentation")
     fun getDetailEvents(id: String) {
         _isLoading.value = true
-        val client = ApiConfig.getApiService().getDetailEvents(id) // Retrofit Call
+        val client = ApiConfig.getApiService().getDetailEvents(id)
         client.enqueue(object : Callback<DetailEventResponse> {
             override fun onResponse(
-                call: Call<DetailEventResponse> ,
+                call: Call<DetailEventResponse>,
                 response: Response<DetailEventResponse>
             ) {
                 _isLoading.value = false
@@ -54,8 +45,8 @@ class DetailViewModel(private val favoriteEventDao: FavoriteEventDao) : ViewMode
                     val detailEventResponse = response.body()
                     if (detailEventResponse != null && !detailEventResponse.error) {
                         _detailEvent.value = detailEventResponse.event
-                        checkIfFavorite(id)
-                        Log.d("DetailViewModel" , "Event details fetched successfully")
+                        checkIfFavorite(detailEventResponse.event.id.toLong())
+                        Log.d(TAG, "Event details fetched successfully")
                     } else {
                         _errorMessage.value =
                             detailEventResponse?.message ?: "Unknown error occurred"
@@ -65,63 +56,31 @@ class DetailViewModel(private val favoriteEventDao: FavoriteEventDao) : ViewMode
                 }
             }
 
-            override fun onFailure(call: Call<DetailEventResponse> , t: Throwable) {
-                Log.e("DetailViewModel" , "API call failed: ${t.message}")
+            override fun onFailure(call: Call<DetailEventResponse>, t: Throwable) {
+                Log.e(TAG, "API call failed: ${t.message}")
                 _isLoading.value = false
                 _errorMessage.value = "Error: ${t.message}"
             }
         })
     }
 
-    private fun checkIfFavorite(eventId: String) {
-        val eventIdLong = eventId.toLongOrNull() ?: 0L
-        favoriteEventDao.isFavorite(eventIdLong).observeForever { isFav ->
-            _isFavorite.postValue(isFav ?:false)
+    private fun checkIfFavorite(eventId: Long) {
+        viewModelScope.launch {
+            val isFav = favoriteEventDao.isFavoriteNow(eventId.toString())
+            _isFavorite.postValue(isFav)
         }
     }
 
-    fun addToFavorite(event: Event) {
+    fun toggleFavorite(favoriteEvent: FavoriteEvent) {
         viewModelScope.launch {
-            val eventIdLong = event.id.toLong()
-            if (eventIdLong != null) {
-                val favoriteEvent = FavoriteEvent(
-                    id = eventIdLong ,
-                    name = event.name ,
-                    mediaCover = event.mediaCover
-                )
+            val isFav = favoriteEventDao.isFavoriteNow(favoriteEvent.id)
+            if (isFav) {
+                favoriteEventDao.removeFromFavorite(favoriteEvent.id)
+                _isFavorite.postValue(false)
+            } else {
                 favoriteEventDao.addToFavorite(favoriteEvent)
                 _isFavorite.postValue(true)
-                Log.d(TAG , "Added event ${event.id} to favorites")
-
-            } else {
-                Log.d(TAG , "Failed to add event : Invalid event ID Format")
             }
-        }
-    }
-
-    fun removeFromFavorite(event: Event) {
-        viewModelScope.launch {
-            favoriteEventDao.removeFromFavorite(event.id.toLong())
-            _isFavorite.postValue(false)
-            Log.d(TAG , "Removed event ${event.id} from favorites")
-        }
-    }
-
-    fun toggleFavorite(event: FavoriteEvent) {
-        val eventIdLong = event.id.toLong()
-        if(eventIdLong != null) {
-            viewModelScope.launch {
-                favoriteEventDao.isFavorite(eventIdLong).observeForever { isFav ->
-                    viewModelScope.launch {
-                        if (isFav == true) {
-                            removeFromFavorite(event)
-                        } else {
-                            addToFavorite(event)
-                        }
-                    }
-                }
-            }
-
         }
     }
 }
