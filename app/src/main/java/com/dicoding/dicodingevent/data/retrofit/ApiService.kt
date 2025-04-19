@@ -26,4 +26,9 @@ interface ApiService {
 
     @GET("events/daily")
     fun getNotificationEvents(): Call<NotificationEventResponse>
+
+        @GET("events/search")
+        fun searchEvents(
+            @Query("query") query: String
+        ): Call<SearchEventResponse>
 }
