@@ -24,8 +24,11 @@ interface ApiService {
     @GET("events/{id}")
     fun getDetailEvents(@Path("id") id: String): Call<DetailEventResponse>
 
-    @GET("events/daily")
-    fun getNotificationEvents(): Call<NotificationEventResponse>
+    @GET("events/upcoming")
+
+        fun getNotificationEvents(
+            @Query("q") active : Int = 1
+        ): Call<NotificationEventResponse>
 
         @GET("events/search")
         fun searchEvents(
