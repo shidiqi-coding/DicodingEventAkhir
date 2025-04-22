@@ -14,20 +14,22 @@ import com.dicoding.dicodingevent.R
 import com.dicoding.dicodingevent.data.retrofit.ApiConfig
 
 class DailyReminderWorker(
-    context: Context,
+    context: Context ,
     workerParams: WorkerParameters
-) : Worker(context, workerParams) {
+) : Worker(context , workerParams) {
 
     override fun doWork(): Result {
         val apiService = ApiConfig.getApiService()
 
+
+
         return try {
-            val response = apiService.getNotificationEvents().execute()
+            val response = apiService.getNotificationEvents(active = 1).execute()
             if (response.isSuccessful) {
                 val result = response.body()
                 if (result != null && !result.error && result.listEvents.isNotEmpty()) {
                     val event = result.listEvents[0]
-                    showNotification(event.name, event.summary)
+                    showNotification(event.name , event.summary)
                 }
                 Result.success()
             } else {
@@ -41,23 +43,25 @@ class DailyReminderWorker(
 
 
     @SuppressLint("MissingPermission")
-    private fun showNotification(title: String, message: String) {
-        val channelId = "daily_reminder_channel"
-        val channelName = "Daily Reminder"
+    private fun showNotification(title: String , message: String) {
+        val channelId = "upcoming_event_channel"
+        val channelName = "Upcoming Event Reminder"
 
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
+        if (Build.VERSION.SDK_INT >= 33) {
             val channel = NotificationChannel(
-                channelId,
-                channelName,
+                channelId ,
+                channelName ,
                 NotificationManager.IMPORTANCE_DEFAULT
             )
-            val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val manager =
+                applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
         }
 
 
-        val builder = NotificationCompat.Builder(applicationContext, channelId)
+        val builder = NotificationCompat.Builder(applicationContext , channelId)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(message)
@@ -65,7 +69,7 @@ class DailyReminderWorker(
 
 
         with(NotificationManagerCompat.from(applicationContext)) {
-            notify(1001, builder.build())
+            notify(1001 , builder.build())
         }
     }
 }
